@@ -1,0 +1,41 @@
+   Compiling chapter-302-test v0.1.0 (/tmp/gh-issue-solver-1767177801881/experiments/chapter-302-test)
+warning: unused import: `std::collections::HashMap`
+ --> src/main.rs:1:5
+  |
+1 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `strategy_type`
+   --> src/main.rs:159:5
+    |
+159 |     strategy_type: &str,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_strategy_type`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `entry_time`, `exit_time`, `entry_price`, `exit_price`, `size`, and `commission` are never read
+  --> src/main.rs:5:5
+   |
+ 4 | struct Trade {
+   |        ----- fields in this struct
+ 5 |     entry_time: u64,
+   |     ^^^^^^^^^^
+ 6 |     exit_time: u64,
+   |     ^^^^^^^^^
+ 7 |     entry_price: f64,
+   |     ^^^^^^^^^^^
+ 8 |     exit_price: f64,
+   |     ^^^^^^^^^^
+ 9 |     size: f64,
+   |     ^^^^
+10 |     pnl: f64,
+11 |     commission: f64,
+   |     ^^^^^^^^^^
+   |
+   = note: `Trade` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `chapter-302-test` (bin "chapter-302-test") generated 3 warnings (run `cargo fix --bin "chapter-302-test" -p chapter-302-test` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 0.26s
