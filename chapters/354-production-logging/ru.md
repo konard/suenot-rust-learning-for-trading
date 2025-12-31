@@ -799,4 +799,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../353-production-monitoring/ru.md) | [Следующий день →](../365-final-putting-it-all-together/ru.md)
+[← Предыдущий день](../353-production-monitoring/ru.md) | [Следующий день →](../359-kubernetes-orchestration/ru.md)
