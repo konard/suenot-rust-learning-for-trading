@@ -56,7 +56,7 @@ fn main() {
 
 ```rust
 fn main() {
-    let candle = (42000.0, 42500.0, 41800.0, 42200.0);
+    let candle: (f64, f64, f64, f64) = (42000.0, 42500.0, 41800.0, 42200.0);
 
     // Разбираем кортеж на переменные
     let (open, high, low, close) = candle;

@@ -753,4 +753,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../294-overfitting-strategy-optimization/ru.md) | [Следующий день →](../315-compiling-release-mode/ru.md)
+[← Предыдущий день](../294-overfitting-strategy-optimization/ru.md) | [Следующий день →](../320-valgrind-and-heaptrack/ru.md)
