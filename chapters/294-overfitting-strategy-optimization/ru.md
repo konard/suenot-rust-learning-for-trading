@@ -558,4 +558,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../171-crossbeam-channels/ru.md)
+[← Предыдущий день](../293-grid-search-parameter-sweep/ru.md) | [Следующий день →](../301-paper-trading/ru.md)
