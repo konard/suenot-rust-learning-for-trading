@@ -558,4 +558,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../293-grid-search-parameter-sweep/ru.md) | [Следующий день →](../302-comparing-strategies/ru.md)
+[← Предыдущий день](../171-crossbeam-channels/ru.md) | [Следующий день →](../314-ffi-c-library-integration/ru.md)

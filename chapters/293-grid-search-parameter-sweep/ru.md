@@ -635,4 +635,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../170-crossbeam-advanced-concurrency/ru.md) | [Следующий день →](../294-genetic-algorithms-optimization/ru.md)
+[← Предыдущий день](../292-parameter-optimization/ru.md) | [Следующий день →](../294-overfitting-strategy-optimization/ru.md)
