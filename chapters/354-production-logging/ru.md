@@ -799,4 +799,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../353-production-monitoring/ru.md) | [Следующий день →](../356-backups/ru.md)
+[← Предыдущий день](../353-production-monitoring/ru.md) | [Следующий день →](../355-secret-rotation/ru.md)
