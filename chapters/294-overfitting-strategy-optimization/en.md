@@ -558,4 +558,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../171-crossbeam-channels/en.md)
+[← Previous day](../293-grid-search-parameter-sweep/en.md) | [Next day →](../311-iterators-vs-loops/en.md)
