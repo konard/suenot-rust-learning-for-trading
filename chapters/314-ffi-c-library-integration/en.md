@@ -753,4 +753,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../294-overfitting-strategy-optimization/en.md) | [Next day →](../320-valgrind-and-heaptrack/en.md)
+[← Previous day](../294-overfitting-strategy-optimization/en.md) | [Next day →](../315-compiling-release-mode/en.md)

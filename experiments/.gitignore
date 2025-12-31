@@ -4,3 +4,5 @@ target/
 # Compiled binaries (executables without extension)
 test_chapter_*
 !test_chapter_*.rs
+test_rustfmt_examples
+test_monte_carlo
