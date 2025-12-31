@@ -1223,4 +1223,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../354-production-logging/en.md) | [Next day →](../359-kubernetes/en.md)
+[← Previous day](../357-disaster-recovery/en.md) | [Next day →](../359-kubernetes-orchestration/en.md)

@@ -1225,4 +1225,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../354-production-logging/ru.md) | [Следующий день →](../359-kubernetes/ru.md)
+[← Предыдущий день](../357-disaster-recovery/ru.md) | [Следующий день →](../359-kubernetes-orchestration/ru.md)

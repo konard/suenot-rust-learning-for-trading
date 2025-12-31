@@ -1474,4 +1474,4 @@ async fn main() {
 
 ## Navigation
 
-[← Previous day](../354-production-logging/en.md) | [Next day →](../360-canary-deployments/en.md)
+[← Previous day](../355-secret-rotation/en.md) | [Next day →](../357-disaster-recovery/en.md)
