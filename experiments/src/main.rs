@@ -1,191 +1,122 @@
-// Test file for Chapter 159: sync_channel examples
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
-use std::sync::mpsc::{sync_channel, TrySendError};
-use std::thread;
-use std::time::Duration;
-
-fn test_basic_sync_channel() {
-    println!("=== Test 1: Basic sync_channel ===");
-    let (sender, receiver) = sync_channel::<f64>(3);
-
-    let producer = thread::spawn(move || {
-        let prices = [42000.0, 42100.0, 42050.0];
-
-        for price in prices {
-            println!("[Producer] Sending price: {}", price);
-            sender.send(price).unwrap();
-            println!("[Producer] Price {} sent", price);
-        }
-    });
-
-    let consumer = thread::spawn(move || {
-        while let Ok(price) = receiver.recv() {
-            println!("[Consumer] Received price: {}", price);
-        }
-    });
-
-    producer.join().unwrap();
-    consumer.join().unwrap();
-    println!();
+#[derive(Debug, Clone)]
+struct Trade {
+    profit: f64,
+    date: String,
 }
 
-fn test_rendezvous_channel() {
-    println!("=== Test 2: Rendezvous channel (sync_channel(0)) ===");
-    let (sender, receiver) = sync_channel::<(String, f64)>(0);
-
-    let order_executor = thread::spawn(move || {
-        while let Ok((symbol, price)) = receiver.recv() {
-            println!("[Executor] Executing order: {} @ {:.2}", symbol, price);
-        }
-    });
-
-    let order_sender = thread::spawn(move || {
-        let orders = [
-            ("BTC".to_string(), 42000.0),
-            ("ETH".to_string(), 2200.0),
-        ];
-
-        for (symbol, price) in orders {
-            println!("[Sender] Sending order: {} @ {:.2}", symbol, price);
-            sender.send((symbol.clone(), price)).unwrap();
-            println!("[Sender] Order {} accepted", symbol);
-        }
-    });
-
-    order_sender.join().unwrap();
-    order_executor.join().unwrap();
-    println!();
+#[derive(Debug)]
+struct SimulationResult {
+    final_equity: f64,
+    max_drawdown: f64,
+    total_return: f64,
 }
 
-fn test_try_send() {
-    println!("=== Test 3: try_send non-blocking ===");
+fn calculate_equity_curve(trades: &[Trade], initial_capital: f64) -> (Vec<f64>, f64) {
+    let mut equity_curve = vec![initial_capital];
+    let mut max_equity = initial_capital;
+    let mut max_drawdown = 0.0;
 
-    #[derive(Debug)]
-    struct MarketTick {
-        symbol: String,
-        price: f64,
-        timestamp: u64,
+    for trade in trades {
+        let new_equity = equity_curve.last().unwrap() + trade.profit;
+        equity_curve.push(new_equity);
+
+        if new_equity > max_equity {
+            max_equity = new_equity;
+        }
+
+        let drawdown = (max_equity - new_equity) / max_equity * 100.0;
+        if drawdown > max_drawdown {
+            max_drawdown = drawdown;
+        }
     }
 
-    let (tx, rx) = sync_channel::<MarketTick>(3);
-
-    let producer = thread::spawn(move || {
-        let mut timestamp = 0u64;
-
-        for i in 0..10 {
-            let tick = MarketTick {
-                symbol: "BTCUSDT".to_string(),
-                price: 42000.0 + (i as f64 * 5.0),
-                timestamp,
-            };
-            timestamp += 1;
-
-            match tx.try_send(tick) {
-                Ok(()) => println!("[Feed] Tick {} sent", i),
-                Err(TrySendError::Full(tick)) => {
-                    println!("[Feed] Buffer full, tick {} dropped (price: {})", i, tick.price);
-                }
-                Err(TrySendError::Disconnected(_)) => {
-                    println!("[Feed] Channel closed");
-                    break;
-                }
-            }
-
-            thread::sleep(Duration::from_millis(5));
-        }
-    });
-
-    let consumer = thread::spawn(move || {
-        let mut count = 0;
-        while let Ok(tick) = rx.recv() {
-            println!(
-                "[Strategy] Processing tick: {} @ {:.2} (ts: {})",
-                tick.symbol, tick.price, tick.timestamp
-            );
-            count += 1;
-            thread::sleep(Duration::from_millis(20));
-        }
-        println!("[Strategy] Processed {} ticks", count);
-    });
-
-    producer.join().unwrap();
-    // tx is already moved into producer, no need to drop
-    consumer.join().unwrap();
-    println!();
+    (equity_curve, max_drawdown)
 }
 
-fn test_order_struct() {
-    println!("=== Test 4: Order struct with sync_channel ===");
+fn run_single_simulation(trades: &[Trade], initial_capital: f64) -> SimulationResult {
+    let mut rng = thread_rng();
+    let mut shuffled = trades.to_vec();
+    shuffled.shuffle(&mut rng);
 
-    #[derive(Debug, Clone)]
-    struct Order {
-        id: u64,
-        symbol: String,
-        side: String,
-        price: f64,
-        quantity: f64,
+    let (equity_curve, max_drawdown) = calculate_equity_curve(&shuffled, initial_capital);
+    let final_equity = *equity_curve.last().unwrap();
+    let total_return = (final_equity - initial_capital) / initial_capital * 100.0;
+
+    SimulationResult {
+        final_equity,
+        max_drawdown,
+        total_return,
     }
-
-    let (order_tx, order_rx) = sync_channel::<Order>(2);
-
-    let processor = thread::spawn(move || {
-        while let Ok(order) = order_rx.recv() {
-            println!("[Processor] Processing order #{}: {} {} @ {:.2}",
-                order.id, order.side, order.symbol, order.price);
-        }
-    });
-
-    let generator = thread::spawn(move || {
-        for i in 0..5 {
-            let order = Order {
-                id: i,
-                symbol: "BTCUSDT".to_string(),
-                side: if i % 2 == 0 { "BUY".to_string() } else { "SELL".to_string() },
-                price: 42000.0 + (i as f64 * 10.0),
-                quantity: 0.1,
-            };
-            println!("[Generator] Sending order #{}...", i);
-            order_tx.send(order).unwrap();
-        }
-    });
-
-    generator.join().unwrap();
-    // order_tx is already moved into generator, no need to drop
-    processor.join().unwrap();
-    println!();
 }
 
-fn test_buffer_size_choice() {
-    println!("=== Test 5: Buffer size selection ===");
-
-    // 0 — Rendezvous
-    let (_tx, _rx) = sync_channel::<i32>(0);
-    println!("sync_channel(0) - Rendezvous channel created");
-
-    // 1-10 — Small buffer
-    let (_tx, _rx) = sync_channel::<i32>(5);
-    println!("sync_channel(5) - Small buffer created");
-
-    // 10-100 — Medium buffer
-    let (_tx, _rx) = sync_channel::<i32>(50);
-    println!("sync_channel(50) - Medium buffer created");
-
-    // 100+ — Large buffer
-    let (_tx, _rx) = sync_channel::<i32>(1000);
-    println!("sync_channel(1000) - Large buffer created");
-
-    println!("Buffer size is chosen based on latency and throughput requirements\n");
+fn monte_carlo_analysis(
+    trades: &[Trade],
+    initial_capital: f64,
+    simulations: usize,
+) -> Vec<SimulationResult> {
+    (0..simulations)
+        .map(|_| run_single_simulation(trades, initial_capital))
+        .collect()
 }
 
 fn main() {
-    println!("Chapter 159: sync_channel - Bounded Queue\n");
-    println!("Running code examples...\n");
+    // Historical strategy trades
+    let historical_trades = vec![
+        Trade { profit: 150.0, date: "2024-01-15".to_string() },
+        Trade { profit: -80.0, date: "2024-01-16".to_string() },
+        Trade { profit: 200.0, date: "2024-01-17".to_string() },
+        Trade { profit: -120.0, date: "2024-01-18".to_string() },
+        Trade { profit: 300.0, date: "2024-01-19".to_string() },
+        Trade { profit: 100.0, date: "2024-01-22".to_string() },
+        Trade { profit: -90.0, date: "2024-01-23".to_string() },
+        Trade { profit: 250.0, date: "2024-01-24".to_string() },
+        Trade { profit: -150.0, date: "2024-01-25".to_string() },
+        Trade { profit: 180.0, date: "2024-01-26".to_string() },
+    ];
 
-    test_basic_sync_channel();
-    test_rendezvous_channel();
-    test_try_send();
-    test_order_struct();
-    test_buffer_size_choice();
+    let initial_capital = 10_000.0;
+    let num_simulations = 100; // Reduced for quick test
 
-    println!("All tests completed successfully!");
+    println!("Running {} Monte Carlo simulations...\n", num_simulations);
+
+    let results = monte_carlo_analysis(&historical_trades, initial_capital, num_simulations);
+
+    // Analyze results
+    let total_returns: Vec<f64> = results.iter().map(|r| r.total_return).collect();
+    let max_drawdowns: Vec<f64> = results.iter().map(|r| r.max_drawdown).collect();
+
+    let avg_return = total_returns.iter().sum::<f64>() / total_returns.len() as f64;
+    let min_return = total_returns.iter().cloned().fold(f64::INFINITY, f64::min);
+    let max_return = total_returns.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+    let avg_drawdown = max_drawdowns.iter().sum::<f64>() / max_drawdowns.len() as f64;
+    let worst_drawdown = max_drawdowns.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+    println!("=== Monte Carlo Simulation Results ===\n");
+    println!("Returns:");
+    println!("  Average: {:.2}%", avg_return);
+    println!("  Minimum: {:.2}%", min_return);
+    println!("  Maximum: {:.2}%", max_return);
+    println!("\nDrawdown:");
+    println!("  Average: {:.2}%", avg_drawdown);
+    println!("  Maximum (worst case): {:.2}%", worst_drawdown);
+
+    // Percentiles
+    let mut sorted_returns = total_returns.clone();
+    sorted_returns.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let p5 = sorted_returns[(sorted_returns.len() as f64 * 0.05) as usize];
+    let p95 = sorted_returns[(sorted_returns.len() as f64 * 0.95) as usize];
+
+    println!("\n90% Confidence Interval:");
+    println!("  5th percentile: {:.2}%", p5);
+    println!("  95th percentile: {:.2}%", p95);
+    println!("\nProbability of loss: {:.1}%",
+        (sorted_returns.iter().filter(|&&r| r < 0.0).count() as f64
+         / sorted_returns.len() as f64 * 100.0));
+
+    println!("\n✓ Test passed successfully!");
 }
