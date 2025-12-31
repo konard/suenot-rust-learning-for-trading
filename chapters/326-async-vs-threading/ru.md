@@ -631,4 +631,4 @@ async fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../319-memory-tracking-leaks/ru.md) | [Следующий день →](../327-*/ru.md)
+[← Предыдущий день](../319-memory-tracking-leaks/ru.md) | [Следующий день →](../352-publishing-crates-io/ru.md)
