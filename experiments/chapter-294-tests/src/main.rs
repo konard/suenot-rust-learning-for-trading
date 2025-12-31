@@ -57,7 +57,9 @@ impl StrategyParams {
 
 #[derive(Debug, Clone)]
 struct Trade {
+    #[allow(dead_code)]
     entry_price: f64,
+    #[allow(dead_code)]
     exit_price: f64,
     pnl: f64,
 }
@@ -72,7 +74,8 @@ fn backtest_strategy(prices: &[f64], params: &StrategyParams) -> Vec<Trade> {
     let mut position_open = false;
     let mut entry_price = 0.0;
 
-    for i in params.ma_long + 1..prices.len() {
+    // Start from ma_long + 1 to ensure we have enough data for both current and previous MAs
+    for i in (params.ma_long + 1)..prices.len() {
         let short_ma: f64 = prices[i - params.ma_short..i].iter().sum::<f64>()
             / params.ma_short as f64;
         let long_ma: f64 = prices[i - params.ma_long..i].iter().sum::<f64>()

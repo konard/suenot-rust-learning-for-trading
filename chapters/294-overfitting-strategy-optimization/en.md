@@ -558,4 +558,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../293-previous/en.md) | [Next day →](../295-next/en.md)
+[← Previous day](../171-crossbeam-channels/en.md)
