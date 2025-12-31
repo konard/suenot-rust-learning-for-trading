@@ -2,6 +2,11 @@
 target/
 Cargo.lock
 
+# Experiments in chapters
+chapters/*/experiments/target/
+chapters/*/experiments/**/target/
+chapters/*/experiments/Cargo.lock
+
 # IDE
 .idea/
 .vscode/
