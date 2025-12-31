@@ -558,4 +558,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../171-crossbeam-channels/en.md)
+[← Previous day](../171-crossbeam-channels/en.md) | [Next day →](../308-micro-optimizations-allocations/en.md)
