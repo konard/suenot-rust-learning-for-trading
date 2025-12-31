@@ -676,4 +676,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../314-ffi-c-library-integration/ru.md) | [Следующий день →](../320-*/ru.md)
+[← Предыдущий день](../314-ffi-c-library-integration/ru.md) | [Следующий день →](../326-async-vs-threading/ru.md)
