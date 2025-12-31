@@ -1,191 +1,255 @@
-// Test file for Chapter 159: sync_channel examples
+// Test compilation of code examples from Chapter 213
 
-use std::sync::mpsc::{sync_channel, TrySendError};
-use std::thread;
-use std::time::Duration;
+use std::fs;
+use std::collections::HashMap;
 
-fn test_basic_sync_channel() {
-    println!("=== Test 1: Basic sync_channel ===");
-    let (sender, receiver) = sync_channel::<f64>(3);
-
-    let producer = thread::spawn(move || {
-        let prices = [42000.0, 42100.0, 42050.0];
-
-        for price in prices {
-            println!("[Producer] Sending price: {}", price);
-            sender.send(price).unwrap();
-            println!("[Producer] Price {} sent", price);
-        }
-    });
-
-    let consumer = thread::spawn(move || {
-        while let Ok(price) = receiver.recv() {
-            println!("[Consumer] Received price: {}", price);
-        }
-    });
-
-    producer.join().unwrap();
-    consumer.join().unwrap();
-    println!();
+/// Trading journal with file persistence
+/// (In a real project, use a database!)
+#[derive(Debug)]
+struct TradingJournal {
+    trades: Vec<Trade>,
+    portfolio: Portfolio,
+    filename: String,
 }
 
-fn test_rendezvous_channel() {
-    println!("=== Test 2: Rendezvous channel (sync_channel(0)) ===");
-    let (sender, receiver) = sync_channel::<(String, f64)>(0);
-
-    let order_executor = thread::spawn(move || {
-        while let Ok((symbol, price)) = receiver.recv() {
-            println!("[Executor] Executing order: {} @ {:.2}", symbol, price);
-        }
-    });
-
-    let order_sender = thread::spawn(move || {
-        let orders = [
-            ("BTC".to_string(), 42000.0),
-            ("ETH".to_string(), 2200.0),
-        ];
-
-        for (symbol, price) in orders {
-            println!("[Sender] Sending order: {} @ {:.2}", symbol, price);
-            sender.send((symbol.clone(), price)).unwrap();
-            println!("[Sender] Order {} accepted", symbol);
-        }
-    });
-
-    order_sender.join().unwrap();
-    order_executor.join().unwrap();
-    println!();
+#[derive(Debug, Clone)]
+struct Trade {
+    id: u64,
+    symbol: String,
+    side: TradeSide,
+    price: f64,
+    quantity: f64,
+    timestamp: i64,
 }
 
-fn test_try_send() {
-    println!("=== Test 3: try_send non-blocking ===");
+#[derive(Debug, Clone)]
+enum TradeSide {
+    Buy,
+    Sell,
+}
 
-    #[derive(Debug)]
-    struct MarketTick {
-        symbol: String,
-        price: f64,
-        timestamp: u64,
+#[derive(Debug, Clone)]
+struct Portfolio {
+    cash: f64,
+    positions: HashMap<String, f64>,
+}
+
+impl TradingJournal {
+    /// Creates a journal or loads an existing one
+    fn new(filename: &str) -> Self {
+        // Try to load existing data
+        if let Ok(data) = fs::read_to_string(filename) {
+            if let Some(journal) = Self::deserialize(&data) {
+                println!("Loaded journal: {} trades, balance ${:.2}",
+                    journal.trades.len(), journal.portfolio.cash);
+                return journal;
+            }
+        }
+
+        // Create new journal
+        println!("Created new journal");
+        TradingJournal {
+            trades: Vec::new(),
+            portfolio: Portfolio {
+                cash: 100_000.0,  // Starting capital
+                positions: HashMap::new(),
+            },
+            filename: filename.to_string(),
+        }
     }
 
-    let (tx, rx) = sync_channel::<MarketTick>(3);
+    /// Adds a trade and saves
+    fn add_trade(&mut self, symbol: &str, side: TradeSide,
+                 price: f64, quantity: f64) -> Result<u64, String> {
+        let cost = price * quantity;
 
-    let producer = thread::spawn(move || {
-        let mut timestamp = 0u64;
-
-        for i in 0..10 {
-            let tick = MarketTick {
-                symbol: "BTCUSDT".to_string(),
-                price: 42000.0 + (i as f64 * 5.0),
-                timestamp,
-            };
-            timestamp += 1;
-
-            match tx.try_send(tick) {
-                Ok(()) => println!("[Feed] Tick {} sent", i),
-                Err(TrySendError::Full(tick)) => {
-                    println!("[Feed] Buffer full, tick {} dropped (price: {})", i, tick.price);
-                }
-                Err(TrySendError::Disconnected(_)) => {
-                    println!("[Feed] Channel closed");
-                    break;
+        // Check if trade is possible
+        match &side {
+            TradeSide::Buy => {
+                if self.portfolio.cash < cost {
+                    return Err(format!("Insufficient funds: need ${:.2}, have ${:.2}",
+                        cost, self.portfolio.cash));
                 }
             }
-
-            thread::sleep(Duration::from_millis(5));
+            TradeSide::Sell => {
+                let position = self.portfolio.positions.get(symbol).unwrap_or(&0.0);
+                if *position < quantity {
+                    return Err(format!("Insufficient {}: need {}, have {}",
+                        symbol, quantity, position));
+                }
+            }
         }
-    });
 
-    let consumer = thread::spawn(move || {
-        let mut count = 0;
-        while let Ok(tick) = rx.recv() {
-            println!(
-                "[Strategy] Processing tick: {} @ {:.2} (ts: {})",
-                tick.symbol, tick.price, tick.timestamp
-            );
-            count += 1;
-            thread::sleep(Duration::from_millis(20));
+        // Create trade
+        let trade = Trade {
+            id: self.trades.len() as u64 + 1,
+            symbol: symbol.to_string(),
+            side: side.clone(),
+            price,
+            quantity,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
+        };
+
+        // Update portfolio
+        match side {
+            TradeSide::Buy => {
+                self.portfolio.cash -= cost;
+                *self.portfolio.positions
+                    .entry(symbol.to_string())
+                    .or_insert(0.0) += quantity;
+            }
+            TradeSide::Sell => {
+                self.portfolio.cash += cost;
+                if let Some(pos) = self.portfolio.positions.get_mut(symbol) {
+                    *pos -= quantity;
+                    if *pos <= 0.0 {
+                        self.portfolio.positions.remove(symbol);
+                    }
+                }
+            }
         }
-        println!("[Strategy] Processed {} ticks", count);
-    });
 
-    producer.join().unwrap();
-    // tx is already moved into producer, no need to drop
-    consumer.join().unwrap();
-    println!();
-}
+        let trade_id = trade.id;
+        self.trades.push(trade);
 
-fn test_order_struct() {
-    println!("=== Test 4: Order struct with sync_channel ===");
+        // IMPORTANT: save after each operation
+        self.save()?;
 
-    #[derive(Debug, Clone)]
-    struct Order {
-        id: u64,
-        symbol: String,
-        side: String,
-        price: f64,
-        quantity: f64,
+        Ok(trade_id)
     }
 
-    let (order_tx, order_rx) = sync_channel::<Order>(2);
+    /// Saves journal to file
+    fn save(&self) -> Result<(), String> {
+        let data = self.serialize();
+        fs::write(&self.filename, data)
+            .map_err(|e| format!("Save error: {}", e))
+    }
 
-    let processor = thread::spawn(move || {
-        while let Ok(order) = order_rx.recv() {
-            println!("[Processor] Processing order #{}: {} {} @ {:.2}",
-                order.id, order.side, order.symbol, order.price);
+    /// Serialization to simple text format
+    fn serialize(&self) -> String {
+        let mut lines = Vec::new();
+
+        // Portfolio header
+        lines.push(format!("CASH:{}", self.portfolio.cash));
+        for (symbol, qty) in &self.portfolio.positions {
+            lines.push(format!("POS:{}:{}", symbol, qty));
         }
-    });
 
-    let generator = thread::spawn(move || {
-        for i in 0..5 {
-            let order = Order {
-                id: i,
-                symbol: "BTCUSDT".to_string(),
-                side: if i % 2 == 0 { "BUY".to_string() } else { "SELL".to_string() },
-                price: 42000.0 + (i as f64 * 10.0),
-                quantity: 0.1,
+        // Trades
+        lines.push("TRADES".to_string());
+        for trade in &self.trades {
+            let side_str = match trade.side {
+                TradeSide::Buy => "BUY",
+                TradeSide::Sell => "SELL",
             };
-            println!("[Generator] Sending order #{}...", i);
-            order_tx.send(order).unwrap();
+            lines.push(format!("{}:{}:{}:{}:{}:{}",
+                trade.id, trade.symbol, side_str,
+                trade.price, trade.quantity, trade.timestamp));
         }
-    });
 
-    generator.join().unwrap();
-    // order_tx is already moved into generator, no need to drop
-    processor.join().unwrap();
-    println!();
-}
+        lines.join("\n")
+    }
 
-fn test_buffer_size_choice() {
-    println!("=== Test 5: Buffer size selection ===");
+    /// Deserialization from text
+    fn deserialize(data: &str) -> Option<Self> {
+        let mut cash = 100_000.0;
+        let mut positions = HashMap::new();
+        let mut trades = Vec::new();
+        let mut reading_trades = false;
 
-    // 0 — Rendezvous
-    let (_tx, _rx) = sync_channel::<i32>(0);
-    println!("sync_channel(0) - Rendezvous channel created");
+        for line in data.lines() {
+            if line.starts_with("CASH:") {
+                cash = line[5..].parse().ok()?;
+            } else if line.starts_with("POS:") {
+                let parts: Vec<&str> = line[4..].split(':').collect();
+                if parts.len() == 2 {
+                    positions.insert(
+                        parts[0].to_string(),
+                        parts[1].parse().ok()?
+                    );
+                }
+            } else if line == "TRADES" {
+                reading_trades = true;
+            } else if reading_trades {
+                let parts: Vec<&str> = line.split(':').collect();
+                if parts.len() == 6 {
+                    let side = match parts[2] {
+                        "BUY" => TradeSide::Buy,
+                        "SELL" => TradeSide::Sell,
+                        _ => continue,
+                    };
+                    trades.push(Trade {
+                        id: parts[0].parse().ok()?,
+                        symbol: parts[1].to_string(),
+                        side,
+                        price: parts[3].parse().ok()?,
+                        quantity: parts[4].parse().ok()?,
+                        timestamp: parts[5].parse().ok()?,
+                    });
+                }
+            }
+        }
 
-    // 1-10 — Small buffer
-    let (_tx, _rx) = sync_channel::<i32>(5);
-    println!("sync_channel(5) - Small buffer created");
+        Some(TradingJournal {
+            trades,
+            portfolio: Portfolio { cash, positions },
+            filename: String::new(),
+        })
+    }
 
-    // 10-100 — Medium buffer
-    let (_tx, _rx) = sync_channel::<i32>(50);
-    println!("sync_channel(50) - Medium buffer created");
+    /// Shows status
+    fn status(&self) {
+        println!("\n=== Portfolio Status ===");
+        println!("Cash: ${:.2}", self.portfolio.cash);
+        println!("Positions:");
+        for (symbol, qty) in &self.portfolio.positions {
+            println!("  {}: {:.4}", symbol, qty);
+        }
+        println!("Total trades: {}", self.trades.len());
 
-    // 100+ — Large buffer
-    let (_tx, _rx) = sync_channel::<i32>(1000);
-    println!("sync_channel(1000) - Large buffer created");
-
-    println!("Buffer size is chosen based on latency and throughput requirements\n");
+        if let Some(last) = self.trades.last() {
+            let side = match last.side {
+                TradeSide::Buy => "Buy",
+                TradeSide::Sell => "Sell",
+            };
+            println!("Last trade: {} {} {} @ ${:.2}",
+                side, last.quantity, last.symbol, last.price);
+        }
+    }
 }
 
 fn main() {
-    println!("Chapter 159: sync_channel - Bounded Queue\n");
-    println!("Running code examples...\n");
+    // Journal is saved to file and loaded on restart
+    let mut journal = TradingJournal::new("trading_journal.dat");
 
-    test_basic_sync_channel();
-    test_rendezvous_channel();
-    test_try_send();
-    test_order_struct();
-    test_buffer_size_choice();
+    journal.status();
 
-    println!("All tests completed successfully!");
+    // Simulate trading
+    println!("\n=== New Trades ===");
+
+    match journal.add_trade("BTC", TradeSide::Buy, 42000.0, 0.5) {
+        Ok(id) => println!("Trade #{}: Bought 0.5 BTC @ $42000", id),
+        Err(e) => println!("Error: {}", e),
+    }
+
+    match journal.add_trade("ETH", TradeSide::Buy, 2800.0, 5.0) {
+        Ok(id) => println!("Trade #{}: Bought 5 ETH @ $2800", id),
+        Err(e) => println!("Error: {}", e),
+    }
+
+    // Try to sell what we don't have
+    match journal.add_trade("SOL", TradeSide::Sell, 100.0, 10.0) {
+        Ok(id) => println!("Trade #{}: Sold 10 SOL", id),
+        Err(e) => println!("Error: {}", e),
+    }
+
+    journal.status();
+
+    println!("\n=== Data will be saved when the program runs again! ===");
+
+    // Clean up test file
+    let _ = std::fs::remove_file("trading_journal.dat");
 }
