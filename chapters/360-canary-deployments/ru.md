@@ -1470,4 +1470,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../354-production-logging/ru.md) | [Следующий день →](../361-*/ru.md)
+[← Предыдущий день](../355-secret-rotation/ru.md) | [Следующий день →](../361-ab-strategy-testing/ru.md)

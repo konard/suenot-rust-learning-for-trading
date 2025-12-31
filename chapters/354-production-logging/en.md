@@ -799,4 +799,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../353-production-monitoring/en.md) | [Next day →](../365-final-putting-it-all-together/en.md)
+[← Previous day](../353-production-monitoring/en.md) | [Next day →](../355-secret-rotation/en.md)
