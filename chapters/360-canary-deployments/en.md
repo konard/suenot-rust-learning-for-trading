@@ -1471,4 +1471,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../355-secret-rotation/en.md) | [Next day →](../361-ab-strategy-testing/en.md)
+[← Previous day](../359-kubernetes-orchestration/en.md) | [Next day →](../361-ab-strategy-testing/en.md)

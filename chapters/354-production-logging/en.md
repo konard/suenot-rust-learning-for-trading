@@ -799,4 +799,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../353-production-monitoring/en.md) | [Next day →](../355-secret-rotation/en.md)
+[← Previous day](../353-production-monitoring/en.md) | [Next day →](../359-kubernetes-orchestration/en.md)
