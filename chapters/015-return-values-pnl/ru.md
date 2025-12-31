@@ -344,4 +344,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../014-function-parameters/ru.md) | [Следующий день →](../016-comments-trading-logic/ru.md)
+[← Предыдущий день](../014-function-parameters/ru.md) | [Следующий день →](../017-if-conditions-buy-or-sell/ru.md)
