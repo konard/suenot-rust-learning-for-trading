@@ -1,6 +1,21 @@
 [package]
-name = "sync_channel_test"
+name = "code_examples"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[[bin]]
+name = "feature_flags_basic"
+path = "feature_flags_basic.rs"
+
+[[bin]]
+name = "feature_flags_percentage"
+path = "feature_flags_percentage.rs"
+
+[[bin]]
+name = "feature_flags_env"
+path = "feature_flags_env.rs"
