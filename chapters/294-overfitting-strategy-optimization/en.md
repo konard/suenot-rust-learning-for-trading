@@ -558,4 +558,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../171-crossbeam-channels/en.md) | [Next day →](../314-ffi-c-library-integration/en.md)
+[← Previous day](../293-grid-search-parameter-sweep/en.md) | [Next day →](../305-profiling-where-time-is-spent/en.md)
