@@ -558,4 +558,4 @@ fn main() {
 
 ## Навигация
 
-[← Предыдущий день](../171-crossbeam-channels/ru.md)
+[← Предыдущий день](../171-crossbeam-channels/ru.md) | [Следующий день →](../310-vec-preallocation/ru.md)
