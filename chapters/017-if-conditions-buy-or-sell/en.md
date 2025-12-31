@@ -404,4 +404,4 @@ fn main() {
 
 ## Navigation
 
-[← Previous day](../016-comments-trading-logic/en.md) | [Next day →](../018-else-market-scenarios/en.md)
+[← Previous day](../015-return-values-pnl/en.md) | [Next day →](../018-else-market-scenarios/en.md)
