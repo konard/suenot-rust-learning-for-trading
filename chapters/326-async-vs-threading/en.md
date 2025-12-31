@@ -631,4 +631,4 @@ async fn main() {
 
 ## Navigation
 
-[← Previous day](../319-memory-tracking-leaks/en.md) | [Next day →](../334-project-high-performance-matcher/en.md)
+[← Previous day](../319-memory-tracking-leaks/en.md) | [Next day →](../352-publishing-crates-io/en.md)
