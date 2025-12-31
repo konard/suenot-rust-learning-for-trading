@@ -1,3 +1,6 @@
 # Rust build artifacts
 target/
-*.log
+
+# Compiled binaries (executables without extension)
+test_chapter_*
+!test_chapter_*.rs
